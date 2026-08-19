@@ -1,16 +1,11 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect } from 'react'
-import { 
-  Search, 
-  Bell, 
-  Settings, 
-  ChevronDown 
-} from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { useTheme } from 'next-themes'
-import { SettingsModal } from './SettingsModal'
+import React, { useState, useEffect } from "react";
+import { Search, Settings, ChevronDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
+import { SettingsModal } from "./SettingsModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,71 +13,82 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { useRouter } from 'next/navigation'
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useRouter } from "next/navigation";
 
-export function Navbar() {
-  const { theme, setTheme } = useTheme()
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
+import { Menu } from "lucide-react";
+
+interface NavbarProps {
+  onMenuToggle?: () => void;
+}
+
+export function Navbar({ onMenuToggle }: NavbarProps) {
+  const { theme, setTheme } = useTheme();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   return (
     <header className="h-16 border-b bg-background/80 backdrop-blur-md sticky top-0 z-10 px-6 flex items-center justify-between">
-      {/* Search */}
-      <div className="relative w-96 max-w-full">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input 
-          placeholder="Search.." 
-          className="pl-10 h-10 bg-white dark:bg-input border-none dark:border-solid dark:border-muted/30 rounded-xl focus-visible:ring-1 focus-visible:ring-primary"
-        />
+      {/* Search and Mobile Menu Toggle */}
+      <div className="flex items-center gap-3 w-96 max-w-[60%] sm:max-w-full">
+        {onMenuToggle && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden shrink-0"
+            onClick={onMenuToggle}
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+        )}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search.."
+            className="pl-10 h-10 bg-white dark:bg-input border-none dark:border-solid dark:border-muted/30 rounded-xl focus-visible:ring-1 focus-visible:ring-primary w-full"
+          />
+        </div>
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-2">
         {/* Theme Toggle */}
-        <Button 
-          variant="outline" 
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="rounded-full bg-white dark:bg-card hover:bg-slate-50 dark:hover:bg-muted transition-colors border-slate-200 dark:border-muted h-8 px-3 flex items-center gap-1 shadow-sm w-19 justify-center"
+        <Button
+          variant="outline"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="rounded-full bg-white dark:bg-card hover:bg-slate-50 dark:hover:bg-muted transition-colors border-slate-200 dark:border-muted h-8 px-2 sm:px-3 flex items-center gap-1 shadow-sm w-8 sm:w-19 justify-center p-0 sm:p-auto"
         >
           {mounted ? (
-            theme === 'dark' ? (
+            theme === "dark" ? (
               <>
                 <span className="text-base leading-none">☀️</span>
-                <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">Light</span>
+                <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 hidden sm:inline">
+                  Light
+                </span>
               </>
             ) : (
               <>
                 <span className="text-base leading-none">🌙</span>
-                <span className="text-sm font-semibold text-slate-500">Dark</span>
+                <span className="text-sm font-semibold text-slate-500 hidden sm:inline">
+                  Dark
+                </span>
               </>
             )
           ) : (
-             <div className="w-10"></div>
+            <div className="w-10"></div>
           )}
         </Button>
 
-        {/* Notifications */}
-        {/* <div className="relative">
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted/50 transition-colors">
-            <Bell className="w-5 h-5" />
-          </Button>
-          <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 border-2 border-background text-[10px]">
-            3
-          </Badge>
-        </div> */}
-
         {/* Settings */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="rounded-full hover:bg-muted/50 transition-colors"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden sm:flex rounded-full hover:bg-muted/50 transition-colors"
           onClick={() => setSettingsOpen(true)}
         >
           <Settings className="w-5 h-5" />
@@ -96,23 +102,28 @@ export function Navbar() {
 
       <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </header>
-  )
+  );
 }
 
 function UserProfile() {
-  const router = useRouter()
-  const user = { name: "Admin User", email: "admin@example.com" }
+  const router = useRouter();
+  const user = { name: "Admin User", email: "admin@example.com" };
 
   const handleLogout = async () => {
-    router.push('/login')
-  }
+    router.push("/login");
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-10 gap-2 px-2 rounded-xl hover:bg-muted/50 transition-colors">
+        <Button
+          variant="ghost"
+          className="h-10 gap-2 px-2 rounded-xl hover:bg-muted/50 transition-colors"
+        >
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-[#c24141] text-white text-xs font-bold">AD</AvatarFallback>
+            <AvatarFallback className="bg-[#c24141] text-white text-xs font-bold">
+              AD
+            </AvatarFallback>
           </Avatar>
           <div className="hidden sm:flex flex-col items-start">
             <span className="text-sm font-semibold">{user.name}</span>
@@ -122,10 +133,12 @@ function UserProfile() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 rounded-xl">
         <DropdownMenuLabel>
-           <div className="flex flex-col">
-              <span className="font-semibold">{user.name}</span>
-              <span className="text-xs text-muted-foreground font-normal truncate">{user.email}</span>
-           </div>
+          <div className="flex flex-col">
+            <span className="font-semibold">{user.name}</span>
+            <span className="text-xs text-muted-foreground font-normal truncate">
+              {user.email}
+            </span>
+          </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem>Profile</DropdownMenuItem>
@@ -133,7 +146,7 @@ function UserProfile() {
         <DropdownMenuItem>Team</DropdownMenuItem>
         <DropdownMenuItem>Subscription</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={handleLogout}
           className="text-red-500 focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-950 cursor-pointer font-medium"
         >
@@ -141,5 +154,5 @@ function UserProfile() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

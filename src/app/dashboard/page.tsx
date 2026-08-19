@@ -1,36 +1,64 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { DashboardLayout } from '@/components/layout/DashboardLayout'
-import { MetricCard } from '@/components/dashboard/MetricCard'
-import { 
-  MessageSquareText, 
-  CheckSquare, 
-  CalendarClock, 
-  CreditCard,
-  Download,
-  Plus
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import React from "react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { MetricCard } from "@/components/dashboard/MetricCard";
+import {
+  Users,
+  UserCheck,
+  UserMinus,
+  DollarSign,
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchCustomers, Customer } from "@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
-  const isLoading = false;
-  const error = null;
-  const metrics = {
-    totalEnquiries: 150,
-    convertedSales: 45,
-    pendingFollowups: 12,
-    outstandingPayments: 500000
-  };
+  const {
+    data: customers = [],
+    isLoading,
+    isError: error,
+  } = useQuery<Customer[]>({
+    queryKey: ["customers"],
+    queryFn: fetchCustomers,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const activeCustomers = customers.filter(
+    (c: Customer) => c.status === "Active",
+  ).length;
+  const inactiveCustomers = customers.filter(
+    (c: Customer) => c.status === "Inactive",
+  ).length;
+  const totalPipeline = activeCustomers * 45000; // Mock $45k per active customer
+
+  const recentCustomers = [...customers]
+    .sort(
+      (a, b) =>
+        new Date(b.lastContactDate).getTime() -
+        new Date(a.lastContactDate).getTime(),
+    )
+    .slice(0, 5);
 
   const formatDate = () => {
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
     };
-    return new Date().toLocaleDateString('en-GB', options);
+    return new Date().toLocaleDateString("en-GB", options);
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
   };
 
   return (
@@ -40,69 +68,136 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">Good morning! Here's what's happening — {formatDate()}</p>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline" className="gap-2 rounded-xl border-border bg-background">
-              <Download className="w-4 h-4" /> Export
-            </Button>
-            <Button className="gap-2 rounded-xl bg-primary text-white hover:bg-primary/90 shadow-md shadow-primary/20">
-              <Plus className="w-4 h-4" /> New Enquiry
-            </Button>
+            <p className="text-muted-foreground">
+              Good morning! Here's what's happening — {formatDate()}
+            </p>
           </div>
         </div>
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {isLoading ? (
-            Array(4).fill(0).map((_, i) => (
-              <div key={i} className="h-32 rounded-2xl bg-muted/50 animate-pulse" />
-            ))
+            Array(4)
+              .fill(0)
+              .map((_, i) => (
+                <div
+                  key={i}
+                  className="h-32 rounded-2xl bg-muted/50 animate-pulse"
+                />
+              ))
           ) : error ? (
             <div className="col-span-full p-4 text-center text-destructive bg-destructive/10 rounded-xl">
               Failed to load metrics. Please check your connection.
             </div>
           ) : (
             <>
-              <MetricCard 
-                label="Total Enquiries" 
-                value={metrics?.totalEnquiries.toString() || "0"} 
-                icon={MessageSquareText} 
-                trend="+12%" 
-                trendType="up" 
+              <MetricCard
+                label="Total Customers"
+                value={customers.length.toString()}
+                icon={Users}
+                trend="+12%"
+                trendType="up"
               />
-              <MetricCard 
-                label="Converted Sales" 
-                value={metrics?.convertedSales.toString() || "0"} 
-                icon={CheckSquare} 
-                trend="+8%" 
-                trendType="up" 
+              <MetricCard
+                label="Active Clients"
+                value={activeCustomers.toString()}
+                icon={UserCheck}
+                trend="+8%"
+                trendType="up"
               />
-              <MetricCard 
-                label="Pending Followups" 
-                value={metrics?.pendingFollowups.toString() || "0"} 
-                icon={CalendarClock} 
-                trend="-3%" 
-                trendType="down" 
+              <MetricCard
+                label="Inactive / Archived"
+                value={inactiveCustomers.toString()}
+                icon={UserMinus}
+                trend="-3%"
+                trendType="down"
               />
-              <MetricCard 
-                label="Outstanding Payments" 
-                value={`₹${((metrics?.outstandingPayments || 0) / 100000).toFixed(1)}L`} 
-                icon={CreditCard} 
-                trend="+5%" 
-                trendType="up" 
+              <MetricCard
+                label="Pipeline Value"
+                value={`$${(totalPipeline / 1000).toFixed(1)}k`}
+                icon={DollarSign}
+                trend="+5%"
+                trendType="up"
               />
             </>
           )}
         </div>
 
         {/* Main Content Area */}
-        <div className="grid grid-cols-1 gap-8">
-          <div className="p-8 border rounded-2xl bg-card text-center text-muted-foreground">
-             Dashboard metrics and recent activity will appear here. Navigate to Customers to view the CRM implementation.
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">
+                  {Array(3)
+                    .fill(0)
+                    .map((_, i) => (
+                      <div key={i} className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
+                        <div className="space-y-2 flex-1">
+                          <div className="h-4 w-1/3 bg-muted animate-pulse rounded" />
+                          <div className="h-3 w-1/4 bg-muted animate-pulse rounded" />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {recentCustomers.map((customer) => (
+                    <div
+                      key={customer.id}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-4">
+                        <Avatar>
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {getInitials(customer.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium leading-none">
+                            {customer.name}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {customer.company}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge
+                          variant={
+                            customer.status === "Active"
+                              ? "default"
+                              : "secondary"
+                          }
+                          className="text-xs"
+                        >
+                          {customer.status}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(
+                            customer.lastContactDate,
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="p-8 border rounded-2xl bg-card text-center text-muted-foreground flex flex-col justify-center items-center h-full min-h-75">
+            <p>Additional charts and analytics will appear here.</p>
+            <p className="mt-2 text-sm opacity-70">
+              Data is automatically synced with the Customers database.
+            </p>
           </div>
         </div>
       </div>
     </DashboardLayout>
-  )
+  );
 }

@@ -1,5 +1,5 @@
 export type { Customer, CustomerStatus } from './mockData';
-import { Customer, mockCustomers } from './mockData';
+import { Customer, CustomerStatus, mockCustomers } from './mockData';
 
 // Simulated delay
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -45,4 +45,16 @@ export const reorderCustomers = async (orderedIds: string[]): Promise<Customer[]
     return { ...c, order: newOrder !== -1 ? newOrder : c.order };
   });
   return [...customersData].sort((a, b) => a.order - b.order);
+};
+
+export const bulkDeleteCustomers = async (ids: string[]): Promise<void> => {
+  await delay(800);
+  customersData = customersData.filter(c => !ids.includes(c.id));
+};
+
+export const bulkUpdateCustomerStatus = async (ids: string[], status: CustomerStatus): Promise<void> => {
+  await delay(800);
+  customersData = customersData.map(c => 
+    ids.includes(c.id) ? { ...c, status } : c
+  );
 };

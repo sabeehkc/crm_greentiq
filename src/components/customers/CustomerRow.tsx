@@ -1,14 +1,13 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { Customer, deleteCustomer } from '@/lib/api'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { TableCell, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import React from "react";
+import { Customer } from "@/lib/api";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,18 +15,27 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { GripVertical, MoreHorizontal, Edit, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+} from "@/components/ui/dropdown-menu";
+import { GripVertical, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface CustomerRowProps {
-  customer: Customer
-  onEdit: (customer: Customer) => void
+  customer: Customer;
+  onEdit: (customer: Customer) => void;
+  onView: (customer: Customer) => void;
+  onDelete: () => void;
+  isSelected: boolean;
+  onToggleSelection: (id: string, selected: boolean) => void;
 }
 
-export function CustomerRow({ customer, onEdit }: CustomerRowProps) {
-  const queryClient = useQueryClient()
-  
+export function CustomerRow({
+  customer,
+  onEdit,
+  onView,
+  onDelete,
+  isSelected,
+  onToggleSelection,
+}: CustomerRowProps) {
   const {
     attributes,
     listeners,
@@ -35,39 +43,49 @@ export function CustomerRow({ customer, onEdit }: CustomerRowProps) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: customer.id })
+  } = useSortable({ id: customer.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  }
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteCustomer,
-    onSuccess: () => {
-      toast.success('Customer deleted')
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
-    },
-    onError: () => {
-      toast.error('Failed to delete customer')
-    }
-  })
+  };
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
       .substring(0, 2)
-      .toUpperCase()
-  }
+      .toUpperCase();
+  };
 
   return (
-    <TableRow ref={setNodeRef} style={style} className={isDragging ? 'bg-muted/50' : ''}>
-      <TableCell className="w-12.5">
-        <div {...attributes} {...listeners} className="cursor-grab hover:bg-muted p-2 rounded text-muted-foreground flex items-center justify-center">
-          <GripVertical className="h-4 w-4" />
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      className={`${isDragging ? "bg-muted/50" : ""} cursor-pointer hover:bg-muted/50`}
+      onClick={() => onView(customer)}
+    >
+      <TableCell className="w-12.5 p-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab hover:bg-muted p-1 rounded text-muted-foreground flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="h-4 w-4" />
+          </div>
+          <div onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) =>
+                onToggleSelection(customer.id, !!checked)
+              }
+              aria-label="Select customer"
+            />
+          </div>
         </div>
       </TableCell>
       <TableCell>
@@ -84,14 +102,16 @@ export function CustomerRow({ customer, onEdit }: CustomerRowProps) {
       <TableCell className="text-muted-foreground">{customer.phone}</TableCell>
       <TableCell>{customer.company}</TableCell>
       <TableCell>
-        <Badge variant={customer.status === 'Active' ? 'default' : 'secondary'}>
+        <Badge variant={customer.status === "Active" ? "default" : "secondary"}>
           {customer.status}
         </Badge>
       </TableCell>
-      <TableCell>{new Date(customer.lastContactDate).toLocaleDateString()}</TableCell>
+      <TableCell>
+        {new Date(customer.lastContactDate).toLocaleDateString()}
+      </TableCell>
       <TableCell className="text-right">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
             <Button variant="ghost" className="h-8 w-8 p-0">
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
@@ -99,19 +119,28 @@ export function CustomerRow({ customer, onEdit }: CustomerRowProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(customer.email)}>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(customer.email);
+              }}
+            >
               Copy email
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onEdit(customer)}>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(customer);
+              }}
+            >
               <Edit className="h-4 w-4 mr-2" /> Edit
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               className="text-destructive focus:text-destructive"
-              onClick={() => {
-                if (window.confirm('Are you sure you want to delete this customer?')) {
-                  deleteMutation.mutate(customer.id)
-                }
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
               }}
             >
               <Trash2 className="h-4 w-4 mr-2" /> Delete
@@ -120,5 +149,5 @@ export function CustomerRow({ customer, onEdit }: CustomerRowProps) {
         </DropdownMenu>
       </TableCell>
     </TableRow>
-  )
+  );
 }
